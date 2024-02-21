@@ -176,16 +176,33 @@ class AttachmentTypeRule(ABCRule[BaseMessageMin]):
 
 
 class ForwardMessagesRule(ABCRule[BaseMessageMin]):
+    def __init__(self, forward_message: bool = True, from_id: Union[int, None] = None):
+        self.forward_message = forward_message
+        self.from_id = from_id
+
     async def check(self, event: BaseMessageMin) -> bool:
-        return bool(event.fwd_messages)
+        if not bool(event.fwd_messages):
+            return False
+
+        if isinstance(self.from_id, int):
+            return self.from_id == event.fwd_messages[0].from_id
+
+        return True
 
 
 class ReplyMessageRule(ABCRule[BaseMessageMin]):
-    def __init__(self, reply_message: bool = True):
+    def __init__(self, reply_message: bool = True, from_id: Union[int, None] = None):
+        self.from_id = from_id
         self.reply_message = reply_message
 
     async def check(self, event: BaseMessageMin) -> bool:
-        return self.reply_message is bool(event.reply_message)
+        if not bool(event.reply_message):
+            return False
+
+        if isinstance(self.from_id, int):
+            return self.from_id == event.reply_message.from_id
+
+        return True
 
 
 class GeoRule(ABCRule[BaseMessageMin]):
@@ -412,6 +429,7 @@ __all__ = (
     "ChatActionRule",
     "CommandRule",
     "CoroutineRule",
+    "ForwardMessagesRule",
     "FromPeerRule",
     "FromUserRule",
     "FuncRule",
@@ -424,6 +442,7 @@ __all__ = (
     "PayloadRule",
     "PeerRule",
     "RegexRule",
+    "ReplyMessageRule",
     "StateGroupRule",
     "StateRule",
     "StickerRule",
