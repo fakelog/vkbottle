@@ -1,3 +1,4 @@
+from asyncio import gather
 from typing import TYPE_CHECKING, Dict
 
 from vkbottle.modules import logger
@@ -15,13 +16,14 @@ class Router(ABCRouter):
     async def route(self, event: dict, ctx_api: "ABCAPI") -> None:
         logger.debug("Routing update {}", event)
 
-        for view in self.views.values():
-            try:
-                if not await view.process_event(event):
-                    continue
-                await view.handle_event(event, ctx_api, self.state_dispenser)
-            except Exception as e:
-                await self.error_handler.handle(e)
+        tasks = [view.handle_event(
+            event, ctx_api, self.state_dispenser
+        ) for view in self.views.values() if await view.process_event(event)]
+
+        try:
+            await gather(*tasks)
+        except Exception as e:
+            await self.error_handler.handle(e)
 
     def construct(
         self,
